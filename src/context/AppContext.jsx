@@ -1,128 +1,263 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+
 const AppContext = createContext(null)
-const uid = () => Math.random().toString(36).slice(2,10)
+const uid = () => Math.random().toString(36).slice(2, 10)
 
-const DEMO_EVENTS = [
-  { id:'1', name:'Mayoon',        date:'2025-09-10', location:'Family Home, Lahore',      notes:'Traditional haldi ceremony',     guest_count:80,  status:'upcoming' },
-  { id:'2', name:'Mehndi',        date:'2025-09-12', location:'Gulberg Marquee, Lahore',  notes:'Evening event with live dhol',   guest_count:250, status:'upcoming' },
-  { id:'3', name:'Barat',         date:'2025-09-14', location:'Pearl Continental, Lahore',notes:'Main wedding ceremony',          guest_count:500, status:'upcoming' },
-  { id:'4', name:'Walima',        date:'2025-09-16', location:'PC Hotel, Lahore',         notes:"Reception by groom's family",    guest_count:400, status:'upcoming' },
-  { id:'5', name:'Bachelor Trip', date:'2025-08-20', location:'Nathia Gali',              notes:'Weekend trip with close friends',guest_count:15,  status:'upcoming' },
-  { id:'6', name:'Honeymoon',     date:'2025-09-20', location:'Maldives',                 notes:'Two weeks beach getaway',        guest_count:2,   status:'upcoming' },
-]
-const DEMO_VENDORS = [
-  { id:'1', name:'Nadia Hussain Salon',category:'makeup_artist', contact_name:'Nadia',       contact_phone:'+92 300 1234567',contact_email:'nadia@salon.pk',   cost:150000, deposit_amount:50000,  deposit_due_date:'2025-07-01',final_payment_due_date:'2025-09-13',status:'deposit_paid',   notes:'Full bridal package',event_id:'3'},
-  { id:'2', name:'Rana Photography',   category:'photographer',  contact_name:'Rana Sajid',  contact_phone:'+92 321 9876543',contact_email:'rana@photo.pk',    cost:200000, deposit_amount:75000,  deposit_due_date:'2025-07-15',final_payment_due_date:'2025-09-14',status:'deposit_paid',   notes:'Photo + video package',event_id:'3'},
-  { id:'3', name:'Pearl Continental',  category:'venue',         contact_name:'Events Team', contact_phone:'+92 42 111 5050',contact_email:'events@pc.pk',     cost:2500000,deposit_amount:500000, deposit_due_date:'2025-06-01',final_payment_due_date:'2025-09-10',status:'deposit_paid',   notes:'Barat hall booked',event_id:'3'},
-  { id:'4', name:'Shiraz Caterers',    category:'caterer',       contact_name:'Shiraz Ahmed',contact_phone:'+92 300 5554443',contact_email:'shiraz@catering.pk',cost:600000,deposit_amount:150000, deposit_due_date:'2025-08-01',final_payment_due_date:'2025-09-12',status:'deposit_due',    notes:'500 pax, menu TBD',event_id:'3'},
-  { id:'5', name:'Dream Decor',        category:'decorator',     contact_name:'Ali Raza',    contact_phone:'+92 333 8887776',contact_email:'ali@dreamdecor.pk', cost:350000, deposit_amount:100000, deposit_due_date:'2025-08-10',final_payment_due_date:'2025-09-11',status:'vendor_selected',notes:'Floral stage setup',event_id:'2'},
-]
-const DEMO_GUESTS = [
-  { id:'1',name:'Farida Begum (Ammi)',  phone:'+92 300 1111111',email:'farida@family.pk',side:'bride',rsvp_status:'confirmed',events_invited:['1','2','3','4'],events_confirmed:['1','2','3','4'],transport_needed:false,accommodation_needed:false,notes:'Mother of bride',invite_token:'tkn-001'},
-  { id:'2',name:'Muhammad Asif (Abbu)',  phone:'+92 300 2222222',email:'asif@family.pk',  side:'bride',rsvp_status:'confirmed',events_invited:['1','2','3','4'],events_confirmed:['1','2','3','4'],transport_needed:false,accommodation_needed:false,notes:'Father of bride',invite_token:'tkn-002'},
-  { id:'3',name:'Zara Aunt (London)',    phone:'+44 7700 123456', email:'zara@uk.com',    side:'bride',rsvp_status:'confirmed',events_invited:['2','3','4'],    events_confirmed:['2','3','4'],    transport_needed:true, accommodation_needed:true, notes:'Flying from UK',invite_token:'tkn-003'},
-  { id:'4',name:'Ahmed Uncle (Toronto)',phone:'+1 416 555 0123', email:'ahmed@canada.ca',side:'groom',rsvp_status:'pending',  events_invited:['3','4'],         events_confirmed:[],               transport_needed:true, accommodation_needed:true, notes:'Needs airport pickup',invite_token:'tkn-004'},
-  { id:'5',name:'Sana (Best Friend)',   phone:'+92 321 3333333', email:'sana@gmail.com', side:'bride',rsvp_status:'confirmed',events_invited:['1','2','3','4'],events_confirmed:['1','2','3','4'],transport_needed:false,accommodation_needed:false,notes:'Bridesmaid',invite_token:'tkn-005'},
-  { id:'6',name:"Bilal (Groom's cousin)",phone:'+92 333 4444444',email:'bilal@email.pk', side:'groom',rsvp_status:'pending',  events_invited:['3','4'],         events_confirmed:[],               transport_needed:false,accommodation_needed:false,notes:'',invite_token:'tkn-006'},
-]
-const DEMO_TASKS = [
-  { id:'1',title:'Book bridal venue',      assigned_to:'Zara (Planner)',     deadline:'2025-05-15',status:'done',       priority:'high',  event_id:'3'},
-  { id:'2',title:'Confirm photographer',   assigned_to:'Zara (Planner)',     deadline:'2025-05-20',status:'done',       priority:'high',  event_id:'3'},
-  { id:'3',title:'Order bridal lehenga',   assigned_to:'Ammi',               deadline:'2025-07-01',status:'in_progress',priority:'high',  event_id:'3'},
-  { id:'4',title:'Send Barat invitations', assigned_to:'Ahmed (Coordinator)',deadline:'2025-07-15',status:'in_progress',priority:'medium',event_id:'3'},
-  { id:'5',title:'Finalise catering menu', assigned_to:'Tariq (Finance)',    deadline:'2025-08-01',status:'todo',       priority:'medium',event_id:'3'},
-  { id:'6',title:'Order mehndi flowers',   assigned_to:'Sana',               deadline:'2025-09-05',status:'todo',       priority:'low',   event_id:'2'},
-  { id:'7',title:'Arrange baraat dhol',    assigned_to:'Zara (Planner)',     deadline:'2025-08-20',status:'todo',       priority:'medium',event_id:'3'},
-  { id:'8',title:'Book honeymoon flights', assigned_to:'Groom',              deadline:'2025-06-01',status:'done',       priority:'high',  event_id:'6'},
-]
-const DEMO_EXPENSES = [
-  { id:'1',title:'Venue deposit – PC Hotel',amount:500000, category:'venue',      paid:true, event_id:'3'},
-  { id:'2',title:'Photography deposit',     amount:75000,  category:'photography',paid:true, event_id:'3'},
-  { id:'3',title:'Bridal lehenga',          amount:280000, category:'clothing',   paid:false,event_id:'3'},
-  { id:'4',title:'Makeup artist deposit',   amount:50000,  category:'beauty',     paid:true, event_id:'3'},
-  { id:'5',title:'Decorator deposit',       amount:100000, category:'decor',      paid:true, event_id:'2'},
-  { id:'6',title:'Catering deposit',        amount:150000, category:'catering',   paid:false,event_id:'3'},
-  { id:'7',title:'Invitation cards',        amount:45000,  category:'stationery', paid:true, event_id:'3'},
-  { id:'8',title:'Honeymoon flights',       amount:320000, category:'travel',     paid:true, event_id:'6'},
-]
-const DEMO_FAMILY = [
-  { id:'1',name:'Aisha',        role:'bride',             email:'aisha@email.pk', phone:'+92 300 9999999'},
-  { id:'2',name:'Hamza',        role:'groom',             email:'hamza@email.pk', phone:'+92 300 8888888'},
-  { id:'3',name:'Zara Hussain', role:'planner',           email:'zara@email.pk',  phone:'+44 7700 123456'},
-  { id:'4',name:'Ahmed Khan',   role:'family_coordinator',email:'ahmed@email.pk', phone:'+1 416 555 0123'},
-  { id:'5',name:'Tariq Mehmood',role:'finance_manager',   email:'tariq@email.pk', phone:'+92 321 7777777'},
-]
-const DEMO_RESPONSIBILITIES = [
-  { id:'1',event_id:'2',name:'Mehndi Decor',      assigned_to:'Zara Hussain', payment_responsibility:'bride', notes:'Floral & fairy lights'},
-  { id:'2',event_id:'2',name:'Mehndi Catering',   assigned_to:'Ahmed Khan',   payment_responsibility:'groom', notes:'Dinner for 250'},
-  { id:'3',event_id:'2',name:'Mehndi Photography',assigned_to:'Zara Hussain', payment_responsibility:'shared',notes:'Photo + reel'},
-  { id:'4',event_id:'3',name:'Barat Venue',        assigned_to:'Ahmed Khan',   payment_responsibility:'groom', notes:'PC Hotel Grand Hall'},
-  { id:'5',event_id:'3',name:'Bridal Makeup',      assigned_to:'Ammi',         payment_responsibility:'bride', notes:'Nadia Hussain Salon'},
-  { id:'6',event_id:'3',name:'Barat Catering',     assigned_to:'Tariq Mehmood',payment_responsibility:'groom', notes:'Shiraz Caterers'},
-  { id:'7',event_id:'4',name:'Walima Venue',        assigned_to:'Ahmed Khan',   payment_responsibility:'groom', notes:''},
-  { id:'8',event_id:'4',name:'Walima Decor',        assigned_to:'Zara Hussain', payment_responsibility:'groom', notes:''},
-]
-const DEMO_OUTFITS = [
-  { id:'1',person_name:'Aisha',       person_role:'bride', event_id:'3',outfit_type:'Bridal Lehenga',designer:'Elan',       cost:280000,payment_responsibility:'bride',     status:'ordered',               notes:'Red & gold, heavily embroidered'},
-  { id:'2',person_name:'Hamza',       person_role:'groom', event_id:'3',outfit_type:'Sherwani',      designer:'Amir Adnan', cost:95000, payment_responsibility:'groom',     status:'tailoring_in_progress', notes:'Ivory with gold embroidery'},
-  { id:'3',person_name:'Aisha',       person_role:'bride', event_id:'2',outfit_type:'Mehndi Outfit', designer:'Sana Safinaz',cost:75000,payment_responsibility:'bride',     status:'ready_for_fitting',     notes:'Yellow & green'},
-  { id:'4',person_name:'Farida Begum',person_role:'family',event_id:'3',outfit_type:'Saree',         designer:'Custom',     cost:45000, payment_responsibility:'individual', status:'completed',             notes:'Deep red silk'},
-]
-const DEMO_GIFTS = [
-  { id:'1',guest_id:'3',gift_type:'cash_envelope',description:'Wedding cash gift', estimated_value:50000, notes:'From Zara Aunt'},
-  { id:'2',guest_id:'1',gift_type:'jewelry',       description:'Gold necklace set', estimated_value:120000,notes:'From Ammi'},
-  { id:'3',guest_id:'5',gift_type:'physical_gift', description:'Crystal dinner set',estimated_value:25000, notes:'From Sana'},
-]
+// ── helpers ───────────────────────────────────────────────────────────────────
+const toast = (msg, type = 'success') => {
+  const el = document.createElement('div')
+  el.textContent = msg
+  el.style.cssText = `
+    position:fixed; bottom:24px; right:24px; z-index:9999;
+    padding:12px 20px; border-radius:12px; font-size:14px; font-weight:500;
+    background:${type === 'error' ? '#fee2e2' : '#d1fae5'};
+    color:${type === 'error' ? '#991b1b' : '#065f46'};
+    border:1px solid ${type === 'error' ? '#fca5a5' : '#6ee7b7'};
+    box-shadow:0 4px 20px rgba(0,0,0,0.12);
+    animation:fadeIn 0.3s ease;
+  `
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 3000)
+}
 
+// ── Provider ──────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
-  const [events,            setEvents]           = useState(DEMO_EVENTS)
-  const [vendors,           setVendors]          = useState(DEMO_VENDORS)
-  const [guests,            setGuests]           = useState(DEMO_GUESTS)
-  const [tasks,             setTasks]            = useState(DEMO_TASKS)
-  const [expenses,          setExpenses]         = useState(DEMO_EXPENSES)
-  const [familyMembers,     setFamilyMembers]    = useState(DEMO_FAMILY)
-  const [responsibilities,  setResponsibilities] = useState(DEMO_RESPONSIBILITIES)
-  const [outfits,           setOutfits]          = useState(DEMO_OUTFITS)
-  const [gifts,             setGifts]            = useState(DEMO_GIFTS)
-  const [moodboard,         setMoodboard]        = useState([])
-  const [budget,            setBudget]           = useState(5000000)
-  const [weddingDate,       setWeddingDate]      = useState('2025-09-14')
-  const [weddingTitle,      setWeddingTitle]     = useState('Aisha & Hamza')
-  const [userRole,          setUserRole]         = useState('admin')
+  const [events,           setEvents]          = useState([])
+  const [vendors,          setVendors]         = useState([])
+  const [guests,           setGuests]          = useState([])
+  const [tasks,            setTasks]           = useState([])
+  const [expenses,         setExpenses]        = useState([])
+  const [familyMembers,    setFamilyMembers]   = useState([])
+  const [responsibilities, setResponsibilities]= useState([])
+  const [outfits,          setOutfits]         = useState([])
+  const [gifts,            setGifts]           = useState([])
+  const [moodboard,        setMoodboard]       = useState([])
+  const [budget,           setBudgetState]     = useState(5000000)
+  const [weddingDate,      setWeddingDateState]= useState('2025-09-14')
+  const [weddingTitle,     setWeddingTitleState]=useState('Aisha & Hamza')
+  const [userRole,         setUserRole]        = useState('admin')
+  const [loading,          setLoading]         = useState(true)
 
-  const mk = (setter) => ({
-    add:    (d)    => setter(p => [...p, {...d, id:uid()}]),
-    update: (id,d) => setter(p => p.map(x => x.id===id ? {...x,...d} : x)),
-    del:    (id)   => setter(p => p.filter(x => x.id!==id)),
+  // ── Load all data from Supabase on mount ──────────────────────────────────
+  useEffect(() => {
+    loadAll()
+  }, [])
+
+  const loadAll = async () => {
+    setLoading(true)
+    try {
+      const [
+        { data: eventsData },
+        { data: vendorsData },
+        { data: guestsData },
+        { data: tasksData },
+        { data: expensesData },
+        { data: familyData },
+        { data: respData },
+        { data: outfitsData },
+        { data: giftsData },
+        { data: moodboardData },
+        { data: settingsData },
+      ] = await Promise.all([
+        supabase.from('events').select('*').order('date', { ascending: true }),
+        supabase.from('vendors').select('*').order('created_at', { ascending: false }),
+        supabase.from('guests').select('*').order('name', { ascending: true }),
+        supabase.from('tasks').select('*').order('deadline', { ascending: true }),
+        supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+        supabase.from('family_members').select('*').order('name', { ascending: true }),
+        supabase.from('responsibilities').select('*').order('created_at', { ascending: true }),
+        supabase.from('outfits').select('*').order('created_at', { ascending: false }),
+        supabase.from('gifts').select('*').order('created_at', { ascending: false }),
+        supabase.from('moodboard').select('*').order('created_at', { ascending: false }),
+        supabase.from('settings').select('*'),
+      ])
+
+      if (eventsData)       setEvents(eventsData)
+      if (vendorsData)      setVendors(vendorsData)
+      if (guestsData)       setGuests(guestsData)
+      if (tasksData)        setTasks(tasksData)
+      if (expensesData)     setExpenses(expensesData)
+      if (familyData)       setFamilyMembers(familyData)
+      if (respData)         setResponsibilities(respData)
+      if (outfitsData)      setOutfits(outfitsData)
+      if (giftsData)        setGifts(giftsData)
+      if (moodboardData)    setMoodboard(moodboardData)
+
+      if (settingsData) {
+        const get = (key) => settingsData.find(s => s.key === key)?.value
+        if (get('wedding_budget')) setBudgetState(Number(get('wedding_budget')))
+        if (get('wedding_date'))   setWeddingDateState(get('wedding_date'))
+        if (get('wedding_title'))  setWeddingTitleState(get('wedding_title'))
+      }
+    } catch (err) {
+      console.error('Failed to load data:', err)
+      toast('Could not connect to database', 'error')
+    }
+    setLoading(false)
+  }
+
+  // ── Settings savers ───────────────────────────────────────────────────────
+  const setBudget = async (val) => {
+    setBudgetState(val)
+    await supabase.from('settings').upsert({ key: 'wedding_budget', value: String(val) })
+  }
+  const setWeddingDate = async (val) => {
+    setWeddingDateState(val)
+    await supabase.from('settings').upsert({ key: 'wedding_date', value: val })
+  }
+  const setWeddingTitle = async (val) => {
+    setWeddingTitleState(val)
+    await supabase.from('settings').upsert({ key: 'wedding_title', value: val })
+  }
+
+  // ── Generic CRUD factory ──────────────────────────────────────────────────
+  const makeCrud = (table, setter) => ({
+    add: async (data) => {
+      const { data: row, error } = await supabase.from(table).insert([data]).select().single()
+      if (error) { toast(`Failed to add: ${error.message}`, 'error'); return null }
+      setter(p => [...p, row])
+      toast('Saved ✓')
+      return row
+    },
+    update: async (id, data) => {
+      const { data: row, error } = await supabase.from(table).update(data).eq('id', id).select().single()
+      if (error) { toast(`Failed to update: ${error.message}`, 'error'); return null }
+      setter(p => p.map(x => x.id === id ? row : x))
+      toast('Updated ✓')
+      return row
+    },
+    del: async (id) => {
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) { toast(`Failed to delete: ${error.message}`, 'error'); return }
+      setter(p => p.filter(x => x.id !== id))
+      toast('Deleted ✓')
+    },
   })
-  const e  = mk(setEvents);         const v  = mk(setVendors)
-  const g  = mk(setGuests);         const t  = mk(setTasks)
-  const ex = mk(setExpenses);       const fm = mk(setFamilyMembers)
-  const r  = mk(setResponsibilities); const o = mk(setOutfits)
-  const gi = mk(setGifts)
 
-  const addGuest = (d) => setGuests(p => [...p, {...d, id:uid(), invite_token:'tkn-'+uid()}])
+  const eventsCrud  = makeCrud('events',           setEvents)
+  const vendorsCrud = makeCrud('vendors',          setVendors)
+  const tasksCrud   = makeCrud('tasks',            setTasks)
+  const expCrud     = makeCrud('expenses',         setExpenses)
+  const famCrud     = makeCrud('family_members',   setFamilyMembers)
+  const respCrud    = makeCrud('responsibilities', setResponsibilities)
+  const outfitsCrud = makeCrud('outfits',          setOutfits)
+  const giftsCrud   = makeCrud('gifts',            setGifts)
+  const moodCrud    = makeCrud('moodboard',        setMoodboard)
 
-  const totalSpent = expenses.reduce((s,e)=>s+(e.amount||0),0)
-  const totalPaid  = expenses.filter(e=>e.paid).reduce((s,e)=>s+(e.amount||0),0)
+  // Guests have a special add that auto-generates invite_token
+  const guestsCrud = {
+    add: async (data) => {
+      const payload = { ...data, invite_token: 'tkn-' + uid() + uid() }
+      const { data: row, error } = await supabase.from('guests').insert([payload]).select().single()
+      if (error) { toast(`Failed to add guest: ${error.message}`, 'error'); return null }
+      setGuests(p => [...p, row])
+      toast('Guest added ✓')
+      return row
+    },
+    update: async (id, data) => {
+      const { data: row, error } = await supabase.from('guests').update(data).eq('id', id).select().single()
+      if (error) { toast(`Failed to update: ${error.message}`, 'error'); return null }
+      setGuests(p => p.map(x => x.id === id ? row : x))
+      toast('Guest updated ✓')
+      return row
+    },
+    del: async (id) => {
+      const { error } = await supabase.from('guests').delete().eq('id', id)
+      if (error) { toast(`Failed to delete: ${error.message}`, 'error'); return }
+      setGuests(p => p.filter(x => x.id !== id))
+      toast('Guest removed ✓')
+    },
+  }
+
+  // ── Derived stats ─────────────────────────────────────────────────────────
+  const totalSpent = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+  const totalPaid  = expenses.filter(e => e.paid).reduce((s, e) => s + (Number(e.amount) || 0), 0)
   const remaining  = budget - totalSpent
+
+  // ── Loading screen ────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: 'var(--cream)', fontFamily: '"DM Sans", sans-serif'
+      }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: 'var(--rose)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          marginBottom: 16, animation: 'pulseSoft 1.5s ease-in-out infinite'
+        }}>
+          <span style={{fontSize: 28}}>🌹</span>
+        </div>
+        <p style={{fontFamily: '"Playfair Display", serif', fontSize: '1.25rem',
+          fontWeight: 600, color: 'var(--text-dark)', marginBottom: 6}}>
+          Shaadi Planner
+        </p>
+        <p style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>
+          Loading your wedding data…
+        </p>
+        <style>{`
+          @keyframes pulseSoft { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.8;transform:scale(0.95)} }
+        `}</style>
+      </div>
+    )
+  }
 
   return (
     <AppContext.Provider value={{
-      events, addEvent:e.add, updateEvent:e.update, deleteEvent:e.del,
-      vendors, addVendor:v.add, updateVendor:v.update, deleteVendor:v.del,
-      guests, addGuest, updateGuest:g.update, deleteGuest:g.del,
-      tasks, addTask:t.add, updateTask:t.update, deleteTask:t.del,
-      expenses, addExpense:ex.add, updateExpense:ex.update, deleteExpense:ex.del,
-      familyMembers, addFamilyMember:fm.add, updateFamilyMember:fm.update, deleteFamilyMember:fm.del,
-      responsibilities, addResponsibility:r.add, updateResponsibility:r.update, deleteResponsibility:r.del,
-      outfits, addOutfit:o.add, updateOutfit:o.update, deleteOutfit:o.del,
-      gifts, addGift:gi.add, updateGift:gi.update, deleteGift:gi.del,
-      moodboard,
-      addMoodboardImage: (d) => setMoodboard(p=>[...p,{...d,id:uid()}]),
-      deleteMoodboardImage: (id) => setMoodboard(p=>p.filter(m=>m.id!==id)),
-      budget, setBudget, weddingDate, setWeddingDate, weddingTitle, setWeddingTitle,
-      userRole, setUserRole, totalSpent, totalPaid, remaining,
+      // Data
+      events, vendors, guests, tasks, expenses,
+      familyMembers, responsibilities, outfits, gifts, moodboard,
+      // Events
+      addEvent:    eventsCrud.add,
+      updateEvent: eventsCrud.update,
+      deleteEvent: eventsCrud.del,
+      // Vendors
+      addVendor:    vendorsCrud.add,
+      updateVendor: vendorsCrud.update,
+      deleteVendor: vendorsCrud.del,
+      // Guests
+      addGuest:    guestsCrud.add,
+      updateGuest: guestsCrud.update,
+      deleteGuest: guestsCrud.del,
+      // Tasks
+      addTask:    tasksCrud.add,
+      updateTask: tasksCrud.update,
+      deleteTask: tasksCrud.del,
+      // Expenses
+      addExpense:    expCrud.add,
+      updateExpense: expCrud.update,
+      deleteExpense: expCrud.del,
+      // Family
+      addFamilyMember:    famCrud.add,
+      updateFamilyMember: famCrud.update,
+      deleteFamilyMember: famCrud.del,
+      // Responsibilities
+      addResponsibility:    respCrud.add,
+      updateResponsibility: respCrud.update,
+      deleteResponsibility: respCrud.del,
+      // Outfits
+      addOutfit:    outfitsCrud.add,
+      updateOutfit: outfitsCrud.update,
+      deleteOutfit: outfitsCrud.del,
+      // Gifts
+      addGift:    giftsCrud.add,
+      updateGift: giftsCrud.update,
+      deleteGift: giftsCrud.del,
+      // Moodboard
+      addMoodboardImage:    moodCrud.add,
+      deleteMoodboardImage: moodCrud.del,
+      // Settings
+      budget, setBudget,
+      weddingDate, setWeddingDate,
+      weddingTitle, setWeddingTitle,
+      // UI
+      userRole, setUserRole,
+      loading, reload: loadAll,
+      // Derived
+      totalSpent, totalPaid, remaining,
     }}>
       {children}
     </AppContext.Provider>
