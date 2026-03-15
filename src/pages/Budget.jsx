@@ -110,11 +110,18 @@ export default function Budget() {
   const openAdd = () => { setEditingExpense(null); setForm(EMPTY_FORM); setModalOpen(true) }
   const openEdit = (e) => { setEditingExpense(e); setForm({ ...EMPTY_FORM, ...e }); setModalOpen(true) }
 
-  const handleSubmit = (ev) => {
+  const handleSubmit = async (ev) => {
     ev.preventDefault()
-    const data = { ...form, amount: Number(form.amount) || 0 }
-    if (editingExpense) updateExpense(editingExpense.id, data)
-    else addExpense(data)
+    const data = {
+      title:    form.title,
+      amount:   Number(form.amount) || 0,
+      category: form.category       || null,
+      paid:     form.paid           || false,
+      notes:    form.notes          || null,
+      event_id: form.event_id       || null,
+    }
+    if (editingExpense) await updateExpense(editingExpense.id, data)
+    else                await addExpense(data)
     setModalOpen(false)
   }
 

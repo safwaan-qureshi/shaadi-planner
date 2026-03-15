@@ -23,10 +23,21 @@ export default function Outfits() {
 
   const set = (k,v) => setForm(p=>({...p,[k]:v}))
   const open = (o=null) => { setEdit(o); setForm(o ? {...EMPTY,...o} : EMPTY); setModal(true) }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const d = {...form, cost:Number(form.cost)||0}
-    if (edit) updateOutfit(edit.id, d); else addOutfit(d)
+    const data = {
+      person_name:            form.person_name,
+      person_role:            form.person_role            || 'family',
+      event_id:               form.event_id               || null,
+      outfit_type:            form.outfit_type,
+      designer:               form.designer               || null,
+      cost:                   Number(form.cost)           || 0,
+      payment_responsibility: form.payment_responsibility || 'individual',
+      status:                 form.status                 || 'shortlisted',
+      notes:                  form.notes                  || null,
+    }
+    if (edit) await updateOutfit(edit.id, data)
+    else      await addOutfit(data)
     setModal(false)
   }
 

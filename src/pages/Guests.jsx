@@ -22,9 +22,12 @@ function CopyBtn({ text }) {
   )
 }
 
-function WhatsAppBtn({ guest, weddingTitle }) {
+function WhatsAppBtn({ guest, weddingTitle, events }) {
   const inviteUrl = `${window.location.origin}/invite/${guest.invite_token}`
-  const eventsText = (guest.events_invited||[]).map(id=>EVENT_ID_MAP[id]||id).join(', ')
+  const eventsText = (guest.events_invited||[]).map(id => {
+    const evt = events?.find(e => e.id === id)
+    return evt ? evt.name : id
+  }).join(', ')
   const msg = encodeURIComponent(
     `Assalamu Alaikum ${guest.name.split(' ')[0]}! 🌹\n\nYou are cordially invited to the wedding celebrations of *${weddingTitle}*.\n\nYou have been invited to: ${eventsText}\n\nPlease click the link below to view your invitation and confirm your RSVP:\n\n${inviteUrl}\n\nWe look forward to celebrating with you! 💌`
   )
@@ -114,9 +117,23 @@ export default function Guests() {
     setForm(g ? {...EMPTY,...g, events_invited:g.events_invited||[], events_confirmed:g.events_confirmed||[]} : EMPTY)
     setModal(true)
   }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    if (edit) updateGuest(edit.id, form); else addGuest(form)
+    // Only send fields that exist in the database schema
+    const data = {
+      name:                 form.name,
+      phone:                form.phone                || null,
+      email:                form.email                || null,
+      side:                 form.side                 || 'bride',
+      rsvp_status:          form.rsvp_status          || 'pending',
+      events_invited:       form.events_invited       || [],
+      events_confirmed:     form.events_confirmed      || [],
+      transport_needed:     form.transport_needed      || false,
+      accommodation_needed: form.accommodation_needed  || false,
+      notes:                form.notes                || null,
+    }
+    if (edit) await updateGuest(edit.id, data)
+    else      await addGuest(data)
     setModal(false)
   }
 
@@ -224,7 +241,7 @@ export default function Guests() {
                       </td>
                       <td className="table-cell">
                         <div className="flex items-center gap-1">
-                          <WhatsAppBtn guest={g} weddingTitle={weddingTitle}/>
+                          <WhatsAppBtn guest={g} weddingTitle={weddingTitle} events={events}/>
                           <CopyBtn text={inviteUrl(g.invite_token)}/>
                         </div>
                       </td>

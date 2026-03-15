@@ -33,10 +33,24 @@ export default function Vendors() {
 
   const set = (k,v) => setForm(p=>({...p,[k]:v}))
   const open = (v=null) => { setEdit(v); setForm(v?{...EMPTY,...v}:EMPTY); setModal(true) }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const d = {...form, cost:Number(form.cost)||0, deposit_amount:Number(form.deposit_amount)||0}
-    if (edit) updateVendor(edit.id,d); else addVendor(d)
+    const data = {
+      name:                   form.name,
+      category:               form.category,
+      contact_name:           form.contact_name           || null,
+      contact_phone:          form.contact_phone          || null,
+      contact_email:          form.contact_email          || null,
+      cost:                   Number(form.cost)           || 0,
+      deposit_amount:         Number(form.deposit_amount) || 0,
+      deposit_due_date:       form.deposit_due_date       || null,
+      final_payment_due_date: form.final_payment_due_date || null,
+      status:                 form.status                 || 'vendor_selected',
+      notes:                  form.notes                  || null,
+      event_id:               form.event_id               || null,
+    }
+    if (edit) await updateVendor(edit.id, data)
+    else      await addVendor(data)
     setModal(false)
   }
 

@@ -153,10 +153,19 @@ export default function Tasks() {
   const openAdd = () => { setEditingTask(null); setForm(EMPTY_FORM); setModalOpen(true) }
   const openEdit = (t) => { setEditingTask(t); setForm({ ...EMPTY_FORM, ...t }); setModalOpen(true) }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editingTask) updateTask(editingTask.id, form)
-    else addTask(form)
+    const data = {
+      title:       form.title,
+      assigned_to: form.assigned_to || null,
+      deadline:    form.deadline    || null,
+      status:      form.status      || 'todo',
+      priority:    form.priority    || 'medium',
+      event_id:    form.event_id    || null,
+      notes:       form.notes       || null,
+    }
+    if (editingTask) await updateTask(editingTask.id, data)
+    else             await addTask(data)
     setModalOpen(false)
   }
 
