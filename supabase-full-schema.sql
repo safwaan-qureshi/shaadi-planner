@@ -1,10 +1,23 @@
 -- ============================================================
--- SHAADI PLANNER — COMPLETE DATABASE SCHEMA
--- Paste this entire file into Supabase SQL Editor and click Run
+-- SHAADI PLANNER — SAFE SCHEMA (run this in SQL Editor)
+-- Uses IF NOT EXISTS and DROP IF EXISTS to avoid conflicts
 -- ============================================================
 
--- Extensions
 create extension if not exists "uuid-ossp";
+
+-- ── Drop old triggers if they exist ──────────────────────────
+drop trigger if exists events_updated_at     on events;
+drop trigger if exists vendors_updated_at    on vendors;
+drop trigger if exists guests_updated_at     on guests;
+drop trigger if exists tasks_updated_at      on tasks;
+drop trigger if exists expenses_updated_at   on expenses;
+drop trigger if exists outfits_updated_at    on outfits;
+drop trigger if exists t_events              on events;
+drop trigger if exists t_vendors             on vendors;
+drop trigger if exists t_guests              on guests;
+drop trigger if exists t_tasks               on tasks;
+drop trigger if exists t_expenses            on expenses;
+drop trigger if exists t_outfits             on outfits;
 
 -- ── Settings ─────────────────────────────────────────────────
 create table if not exists settings (
@@ -154,44 +167,56 @@ create table if not exists moodboard (
   created_at timestamptz default now()
 );
 
--- ── updated_at trigger ───────────────────────────────────────
+-- ── updated_at function ──────────────────────────────────────
 create or replace function update_updated_at()
 returns trigger as $$
 begin new.updated_at = now(); return new; end;
 $$ language plpgsql;
 
-create trigger t_events      before update on events      for each row execute function update_updated_at();
-create trigger t_vendors     before update on vendors     for each row execute function update_updated_at();
-create trigger t_guests      before update on guests      for each row execute function update_updated_at();
-create trigger t_tasks       before update on tasks       for each row execute function update_updated_at();
-create trigger t_expenses    before update on expenses    for each row execute function update_updated_at();
-create trigger t_outfits     before update on outfits     for each row execute function update_updated_at();
+-- ── Triggers (fresh) ─────────────────────────────────────────
+create trigger t_events   before update on events   for each row execute function update_updated_at();
+create trigger t_vendors  before update on vendors  for each row execute function update_updated_at();
+create trigger t_guests   before update on guests   for each row execute function update_updated_at();
+create trigger t_tasks    before update on tasks    for each row execute function update_updated_at();
+create trigger t_expenses before update on expenses for each row execute function update_updated_at();
+create trigger t_outfits  before update on outfits  for each row execute function update_updated_at();
 
--- ── Row Level Security (open for MVP) ────────────────────────
-alter table settings        enable row level security;
-alter table events          enable row level security;
-alter table vendors         enable row level security;
-alter table guests          enable row level security;
-alter table family_members  enable row level security;
-alter table tasks           enable row level security;
-alter table expenses        enable row level security;
+-- ── Row Level Security ────────────────────────────────────────
+alter table settings         enable row level security;
+alter table events           enable row level security;
+alter table vendors          enable row level security;
+alter table guests           enable row level security;
+alter table family_members   enable row level security;
+alter table tasks            enable row level security;
+alter table expenses         enable row level security;
 alter table responsibilities enable row level security;
-alter table outfits         enable row level security;
-alter table gifts           enable row level security;
-alter table moodboard       enable row level security;
+alter table outfits          enable row level security;
+alter table gifts            enable row level security;
+alter table moodboard        enable row level security;
 
--- Allow all reads and writes (no login required for MVP)
-create policy "public_all" on settings        for all using (true) with check (true);
-create policy "public_all" on events          for all using (true) with check (true);
-create policy "public_all" on vendors         for all using (true) with check (true);
-create policy "public_all" on guests          for all using (true) with check (true);
-create policy "public_all" on family_members  for all using (true) with check (true);
-create policy "public_all" on tasks           for all using (true) with check (true);
-create policy "public_all" on expenses        for all using (true) with check (true);
+-- Drop old policies if they exist, then recreate
+do $$ declare r record;
+begin
+  for r in select schemaname, tablename, policyname
+    from pg_policies
+    where tablename in ('settings','events','vendors','guests','family_members',
+                        'tasks','expenses','responsibilities','outfits','gifts','moodboard')
+  loop
+    execute format('drop policy if exists %I on %I.%I', r.policyname, r.schemaname, r.tablename);
+  end loop;
+end $$;
+
+create policy "public_all" on settings         for all using (true) with check (true);
+create policy "public_all" on events           for all using (true) with check (true);
+create policy "public_all" on vendors          for all using (true) with check (true);
+create policy "public_all" on guests           for all using (true) with check (true);
+create policy "public_all" on family_members   for all using (true) with check (true);
+create policy "public_all" on tasks            for all using (true) with check (true);
+create policy "public_all" on expenses         for all using (true) with check (true);
 create policy "public_all" on responsibilities for all using (true) with check (true);
-create policy "public_all" on outfits         for all using (true) with check (true);
-create policy "public_all" on gifts           for all using (true) with check (true);
-create policy "public_all" on moodboard       for all using (true) with check (true);
+create policy "public_all" on outfits          for all using (true) with check (true);
+create policy "public_all" on gifts            for all using (true) with check (true);
+create policy "public_all" on moodboard        for all using (true) with check (true);
 
 -- ── Indexes ───────────────────────────────────────────────────
 create index if not exists guests_invite_token_idx on guests(invite_token);

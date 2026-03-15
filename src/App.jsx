@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
-import Layout from './components/layout/Layout'
+import Layout       from './components/layout/Layout'
 import Dashboard    from './pages/Dashboard'
 import Events       from './pages/Events'
 import EventDetail  from './pages/events/EventDetail'
@@ -13,28 +13,30 @@ import Outfits      from './pages/Outfits'
 import Gifts        from './pages/Gifts'
 import Invitations  from './pages/Invitations'
 import Invitation   from './pages/Invitation'
+import Settings     from './pages/Settings'
 
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public invitation page – no sidebar/layout */}
+          {/* Public invitation page — no sidebar */}
           <Route path="/invite/:token" element={<Invitation />} />
 
-          {/* Main app with sidebar */}
+          {/* Main app */}
           <Route path="/" element={<Layout />}>
-            <Route index             element={<Dashboard />} />
-            <Route path="events"     element={<Events />} />
-            <Route path="events/:id" element={<EventDetail />} />
-            <Route path="invitations"element={<Invitations />} />
-            <Route path="vendors"    element={<Vendors />} />
-            <Route path="guests"     element={<Guests />} />
-            <Route path="budget"     element={<Budget />} />
-            <Route path="tasks"      element={<Tasks />} />
-            <Route path="family"     element={<Family />} />
-            <Route path="outfits"    element={<Outfits />} />
-            <Route path="gifts"      element={<Gifts />} />
+            <Route index              element={<Dashboard />}   />
+            <Route path="events"      element={<Events />}      />
+            <Route path="events/:id"  element={<EventDetail />} />
+            <Route path="invitations" element={<Invitations />} />
+            <Route path="vendors"     element={<Vendors />}     />
+            <Route path="guests"      element={<Guests />}      />
+            <Route path="budget"      element={<Budget />}      />
+            <Route path="tasks"       element={<Tasks />}       />
+            <Route path="family"      element={<Family />}      />
+            <Route path="outfits"     element={<Outfits />}     />
+            <Route path="gifts"       element={<Gifts />}       />
+            <Route path="settings"    element={<Settings />}    />
           </Route>
         </Routes>
       </BrowserRouter>
