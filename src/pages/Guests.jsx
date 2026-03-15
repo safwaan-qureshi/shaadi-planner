@@ -6,7 +6,6 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import EmptyState from '../components/ui/EmptyState'
 import Badge from '../components/ui/Badge'
 
-const EVENT_ID_MAP = { '1':'Mayoon','2':'Mehndi','3':'Barat','4':'Walima','5':'Bachelor Trip','6':'Honeymoon' }
 const RSVP_STATUSES = ['confirmed','pending','declined']
 const EMPTY = { name:'', phone:'', email:'', side:'bride', rsvp_status:'pending', events_invited:[], events_confirmed:[], transport_needed:false, accommodation_needed:false, notes:'' }
 
@@ -226,11 +225,18 @@ export default function Guests() {
                       </td>
                       <td className="table-cell">
                         <div className="flex flex-wrap gap-1">
-                          {(g.events_invited||[]).map(id=>(
-                            <span key={id} className="text-xs px-1.5 py-0.5 rounded" style={{background:'var(--champagne)',color:'var(--text-mid)'}}>
-                              {EVENT_ID_MAP[id]||id}
-                            </span>
-                          ))}
+                          {(g.events_invited||[]).map(id => {
+                            const evtName = events.find(e => e.id === id)?.name || '?'
+                            const evtEmoji = {'Mayoon':'💛','Mehndi':'🌿','Barat':'🌹','Walima':'✨','Bachelor Trip':'🎉','Honeymoon':'🌴'}[evtName] || '💍'
+                            return (
+                              <span key={id} className="text-xs px-1.5 py-0.5 rounded flex items-center gap-0.5" style={{background:'var(--champagne)',color:'var(--text-mid)'}}>
+                                {evtEmoji} {evtName}
+                              </span>
+                            )
+                          })}
+                          {(!g.events_invited || g.events_invited.length === 0) && (
+                            <span className="text-xs" style={{color:'var(--text-muted)'}}>None assigned</span>
+                          )}
                         </div>
                       </td>
                       <td className="table-cell"><Badge status={g.rsvp_status}/></td>

@@ -190,7 +190,7 @@ function MiniWebsitePreview({ event, weddingTitle, weddingDate }) {
 }
 
 // ── Invite Link Card ──────────────────────────────────────────────────────────
-function InviteLinkCard({ guest, eventId, weddingTitle, type }) {
+function InviteLinkCard({ guest, eventId, weddingTitle, type, events }) {
   const [copied, setCopied] = useState(false)
   const inviteUrl = `${window.location.origin}/invite/${guest.invite_token}`
 
@@ -200,14 +200,13 @@ function InviteLinkCard({ guest, eventId, weddingTitle, type }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Use live events array to get names — no hardcoded IDs
   const eventNames = (guest.events_invited || [])
-    .map(id => {
-      const names = { '1':'Mayoon','2':'Mehndi','3':'Barat','4':'Walima','5':'Bachelor Trip','6':'Honeymoon' }
-      return names[id] || id
-    }).join(', ')
+    .map(id => events?.find(e => e.id === id)?.name || '?')
+    .join(', ')
 
   const whatsappMsg = encodeURIComponent(
-    `Assalamu Alaikum ${guest.name.split(' ')[0]}! 🌹\n\nYou are cordially invited to the *${weddingTitle}* wedding celebrations.\n\nEvents: ${eventNames}\n\nPlease click your personal invitation link to RSVP:\n\n${inviteUrl}\n\nWe look forward to celebrating with you! 💌`
+    `Assalamu Alaikum ${guest.name.split(' ')[0]}! 🌹\n\nYou are cordially invited to the *${weddingTitle}* wedding celebrations.\n\nEvents: ${eventNames || 'Wedding celebrations'}\n\nPlease click your personal invitation link to RSVP:\n\n${inviteUrl}\n\nWe look forward to celebrating with you! 💌`
   )
   const phone = guest.phone?.replace(/[^0-9]/g, '')
   const waUrl = phone ? `https://wa.me/${phone}?text=${whatsappMsg}` : `https://wa.me/?text=${whatsappMsg}`
@@ -439,6 +438,7 @@ export default function Invitations() {
                     eventId={selectedEventId}
                     weddingTitle={weddingTitle}
                     type={inviteType}
+                    events={events}
                   />
                 ))}
                 {eventGuests.length > 6 && (
