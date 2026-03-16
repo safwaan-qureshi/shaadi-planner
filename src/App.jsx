@@ -1,21 +1,26 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
-import Layout       from './components/layout/Layout'
-import Dashboard    from './pages/Dashboard'
-import Events       from './pages/Events'
-import EventDetail  from './pages/events/EventDetail'
-import Vendors      from './pages/Vendors'
-import Guests       from './pages/Guests'
-import Budget       from './pages/Budget'
-import Tasks        from './pages/Tasks'
-import Family       from './pages/Family'
-import Outfits      from './pages/Outfits'
-import Gifts        from './pages/Gifts'
-import Invitations  from './pages/Invitations'
-import Invitation   from './pages/Invitation'
-import Settings     from './pages/Settings'
-import Travel       from './pages/Travel'
-import Updates      from './pages/Updates'
+import Layout      from './components/layout/Layout'
+import Dashboard   from './pages/Dashboard'
+import Events      from './pages/Events'
+import EventDetail from './pages/events/EventDetail'
+import Vendors     from './pages/Vendors'
+import Guests      from './pages/Guests'
+import Budget      from './pages/Budget'
+import Tasks       from './pages/Tasks'
+import Family      from './pages/Family'
+import Outfits     from './pages/Outfits'
+import Gifts       from './pages/Gifts'
+import Invitations from './pages/Invitations'
+import Invitation  from './pages/Invitation'
+import Settings    from './pages/Settings'
+import Travel      from './pages/Travel'
+import Updates     from './pages/Updates'
+import Analytics   from './pages/Analytics'
+import QRCheckin   from './pages/QRCheckin'
+import AIPlanner   from './pages/AIPlanner'
+import PhotoAlbum  from './pages/PhotoAlbum'
+import Portal      from './pages/Portal'
 
 export default function App() {
   return (
@@ -38,6 +43,11 @@ export default function App() {
             <Route path="settings"    element={<Settings />}    />
             <Route path="travel"      element={<Travel />}      />
             <Route path="updates"     element={<Updates />}     />
+            <Route path="analytics"   element={<Analytics />}   />
+            <Route path="checkin"     element={<QRCheckin />}   />
+            <Route path="ai-planner"  element={<AIPlanner />}   />
+            <Route path="photos"      element={<PhotoAlbum />}  />
+            <Route path="portal"      element={<Portal />}      />
           </Route>
         </Routes>
       </BrowserRouter>

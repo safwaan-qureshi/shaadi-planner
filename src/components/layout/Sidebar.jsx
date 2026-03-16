@@ -1,45 +1,77 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, CalendarDays, Users, ShoppingBag,
-  Wallet, CheckSquare, Heart, X, UsersRound,
-  Shirt, Gift, ChevronDown, ChevronRight, Mail,
-  Settings, Plane, Activity
+  LayoutDashboard, CalendarDays, Users, ShoppingBag, Wallet,
+  CheckSquare, Heart, X, UsersRound, Shirt, Gift, Mail,
+  Settings, Plane, Activity, BarChart2, QrCode, Sparkles,
+  Image, Globe, ChevronDown, ChevronRight
 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 const EVENT_EMOJIS = { 'Mayoon':'💛','Mehndi':'🌿','Barat':'🌹','Walima':'✨','Bachelor Trip':'🎉','Honeymoon':'🌴' }
 
-// Role-based nav — which pages each role can see
-const NAV_BY_ROLE = {
-  admin:           ['vendors','guests','invitations','budget','tasks','outfits','gifts','family','travel','updates','settings'],
-  bride_family:    ['guests','invitations','tasks','outfits','gifts','travel','updates'],
-  groom_family:    ['vendors','guests','invitations','tasks','travel','updates'],
-  overseas_family: ['travel','invitations','updates'],
-  guest_viewer:    ['invitations'],
-}
+const NAV_SECTIONS = [
+  {
+    label: 'Planning',
+    items: [
+      { to:'/vendors',    icon:ShoppingBag, label:'Vendors'      },
+      { to:'/guests',     icon:Users,       label:'Guests'       },
+      { to:'/invitations',icon:Mail,        label:'Invitations'  },
+      { to:'/budget',     icon:Wallet,      label:'Budget'       },
+      { to:'/tasks',      icon:CheckSquare, label:'Tasks'        },
+    ],
+    roles: ['admin','bride_family','groom_family'],
+  },
+  {
+    label: 'Wedding Day',
+    items: [
+      { to:'/outfits',    icon:Shirt,       label:'Outfits'      },
+      { to:'/gifts',      icon:Gift,        label:'Gifts'        },
+      { to:'/checkin',    icon:QrCode,      label:'QR Check-In'  },
+      { to:'/photos',     icon:Image,       label:'Photo Album'  },
+    ],
+    roles: ['admin','bride_family','groom_family'],
+  },
+  {
+    label: 'Coordination',
+    items: [
+      { to:'/travel',     icon:Plane,       label:'Travel Plans' },
+      { to:'/updates',    icon:Activity,    label:'Updates Feed' },
+      { to:'/family',     icon:UsersRound,  label:'Family'       },
+    ],
+    roles: ['admin','bride_family','groom_family','overseas_family'],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { to:'/analytics',  icon:BarChart2,   label:'Analytics'    },
+      { to:'/ai-planner', icon:Sparkles,    label:'AI Planner'   },
+      { to:'/portal',     icon:Globe,       label:'Wedding Portal'},
+      { to:'/settings',   icon:Settings,    label:'Settings'     },
+    ],
+    roles: ['admin'],
+  },
+]
 
-const ALL_NAV = [
-  { to:'/vendors',     icon:ShoppingBag, label:'Vendors'     },
-  { to:'/guests',      icon:Users,       label:'Guests'      },
-  { to:'/invitations', icon:Mail,        label:'Invitations' },
-  { to:'/budget',      icon:Wallet,      label:'Budget'      },
-  { to:'/tasks',       icon:CheckSquare, label:'Tasks'       },
-  { to:'/outfits',     icon:Shirt,       label:'Outfits'     },
-  { to:'/gifts',       icon:Gift,        label:'Gifts'       },
-  { to:'/family',      icon:UsersRound,  label:'Family'      },
-  { to:'/travel',      icon:Plane,       label:'Travel Plans'},
-  { to:'/updates',     icon:Activity,    label:'Updates'     },
-  { to:'/settings',    icon:Settings,    label:'Settings'    },
+// Overseas-only nav
+const OVERSEAS_NAV = [
+  { to:'/travel',      icon:Plane,    label:'My Travel Plan' },
+  { to:'/invitations', icon:Mail,     label:'My Invitation'  },
+  { to:'/updates',     icon:Activity, label:'Updates'        },
 ]
 
 export default function Sidebar({ open, onClose }) {
   const { weddingTitle, events, userRole } = useApp()
   const location = useLocation()
   const [eventsOpen, setEventsOpen] = useState(true)
+  const [openSections, setOpenSections] = useState({ Planning:true, 'Wedding Day':false, Coordination:false, Insights:false })
 
-  const allowedNav = NAV_BY_ROLE[userRole] || NAV_BY_ROLE.admin
-  const visibleNav = ALL_NAV.filter(n => allowedNav.includes(n.to.replace('/','')))
+  const toggleSection = (label) => setOpenSections(p=>({...p,[label]:!p[label]}))
+
+  const isActive = (to) => to==='/' ? location.pathname==='/' : location.pathname.startsWith(to)
+
+  const isOverseas = userRole === 'overseas_family'
+  const isGuestView = userRole === 'guest_viewer'
 
   return (
     <>
@@ -71,55 +103,76 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-          {/* Dashboard — always visible */}
+
+          {/* Dashboard */}
           <NavLink to="/" onClick={onClose}
-            className={location.pathname==='/' ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
+            className={isActive('/')&&location.pathname==='/' ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
             <LayoutDashboard size={17}/><span>Dashboard</span>
           </NavLink>
 
-          {/* Events — visible to admin, bride, groom */}
-          {['admin','bride_family','groom_family'].includes(userRole) && (
-            <div>
-              <button onClick={()=>setEventsOpen(o=>!o)}
-                className="nav-item nav-item-inactive w-full justify-between text-left">
-                <span className="flex items-center gap-3"><CalendarDays size={17}/>Events</span>
-                {eventsOpen ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
-              </button>
-              {eventsOpen && (
-                <div className="ml-3 mt-0.5 space-y-0.5 pl-2 border-l" style={{borderColor:'var(--champagne-border)'}}>
-                  {userRole === 'admin' && (
-                    <NavLink to="/events" end onClick={onClose}
-                      className={location.pathname==='/events' ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
-                      <span className="text-base">⚙️</span><span>Manage Events</span>
-                    </NavLink>
-                  )}
-                  {events.map(evt => (
-                    <NavLink key={evt.id} to={`/events/${evt.id}`} onClick={onClose}
-                      className={location.pathname===`/events/${evt.id}` ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
-                      <span>{EVENT_EMOJIS[evt.name]||'💍'}</span>
-                      <span className="truncate">{evt.name}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Overseas: show schedule link */}
-          {userRole === 'overseas_family' && (
-            <NavLink to="/updates" onClick={onClose}
-              className={location.pathname==='/updates' ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
-              <CalendarDays size={17}/><span>Wedding Schedule</span>
-            </NavLink>
-          )}
-
-          {/* Role-filtered nav */}
-          {visibleNav.map(({ to, icon:Icon, label }) => (
+          {/* Overseas simplified nav */}
+          {isOverseas && OVERSEAS_NAV.map(({to,icon:Icon,label})=>(
             <NavLink key={to} to={to} onClick={onClose}
-              className={location.pathname.startsWith(to) ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
+              className={isActive(to)?'nav-item nav-item-active':'nav-item nav-item-inactive'}>
               <Icon size={17}/><span>{label}</span>
             </NavLink>
           ))}
+
+          {/* Guest viewer */}
+          {isGuestView && (
+            <NavLink to="/invitations" onClick={onClose}
+              className={isActive('/invitations')?'nav-item nav-item-active':'nav-item nav-item-inactive'}>
+              <Mail size={17}/><span>My Invitation</span>
+            </NavLink>
+          )}
+
+          {/* Full nav for admin/bride/groom */}
+          {!isOverseas && !isGuestView && (
+            <>
+              {/* Events */}
+              <div>
+                <button onClick={()=>setEventsOpen(o=>!o)}
+                  className="nav-item nav-item-inactive w-full justify-between text-left">
+                  <span className="flex items-center gap-3"><CalendarDays size={17}/>Events</span>
+                  {eventsOpen ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
+                </button>
+                {eventsOpen && (
+                  <div className="ml-3 mt-0.5 space-y-0.5 pl-2 border-l" style={{borderColor:'var(--champagne-border)'}}>
+                    {userRole==='admin' && (
+                      <NavLink to="/events" end onClick={onClose}
+                        className={location.pathname==='/events'?'nav-item text-xs py-1.5 nav-item-active':'nav-item text-xs py-1.5 nav-item-inactive'}>
+                        <span className="text-base">⚙️</span><span>Manage Events</span>
+                      </NavLink>
+                    )}
+                    {events.map(evt=>(
+                      <NavLink key={evt.id} to={`/events/${evt.id}`} onClick={onClose}
+                        className={location.pathname===`/events/${evt.id}`?'nav-item text-xs py-1.5 nav-item-active':'nav-item text-xs py-1.5 nav-item-inactive'}>
+                        <span>{EVENT_EMOJIS[evt.name]||'💍'}</span>
+                        <span className="truncate">{evt.name}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sectioned nav */}
+              {NAV_SECTIONS.filter(s=>s.roles.includes(userRole)||userRole==='admin').map(section=>(
+                <div key={section.label}>
+                  <button onClick={()=>toggleSection(section.label)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 mt-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{color:'var(--text-muted)'}}>{section.label}</p>
+                    {openSections[section.label] ? <ChevronDown size={11} style={{color:'var(--text-muted)'}}/> : <ChevronRight size={11} style={{color:'var(--text-muted)'}}/>}
+                  </button>
+                  {openSections[section.label] && section.items.map(({to,icon:Icon,label})=>(
+                    <NavLink key={to} to={to} onClick={onClose}
+                      className={isActive(to)?'nav-item nav-item-active':'nav-item nav-item-inactive'}>
+                      <Icon size={17}/><span>{label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="p-4" style={{borderTop:'1px solid var(--champagne-border)'}}>
