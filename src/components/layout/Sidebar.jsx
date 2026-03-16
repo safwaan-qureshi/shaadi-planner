@@ -2,14 +2,24 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Users, ShoppingBag,
   Wallet, CheckSquare, Heart, X, UsersRound,
-  Shirt, Gift, ChevronDown, ChevronRight, Mail, Settings
+  Shirt, Gift, ChevronDown, ChevronRight, Mail,
+  Settings, Plane, Activity
 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 const EVENT_EMOJIS = { 'Mayoon':'💛','Mehndi':'🌿','Barat':'🌹','Walima':'✨','Bachelor Trip':'🎉','Honeymoon':'🌴' }
 
-const NAV_MAIN = [
+// Role-based nav — which pages each role can see
+const NAV_BY_ROLE = {
+  admin:           ['vendors','guests','invitations','budget','tasks','outfits','gifts','family','travel','updates','settings'],
+  bride_family:    ['guests','invitations','tasks','outfits','gifts','travel','updates'],
+  groom_family:    ['vendors','guests','invitations','tasks','travel','updates'],
+  overseas_family: ['travel','invitations','updates'],
+  guest_viewer:    ['invitations'],
+}
+
+const ALL_NAV = [
   { to:'/vendors',     icon:ShoppingBag, label:'Vendors'     },
   { to:'/guests',      icon:Users,       label:'Guests'      },
   { to:'/invitations', icon:Mail,        label:'Invitations' },
@@ -18,13 +28,18 @@ const NAV_MAIN = [
   { to:'/outfits',     icon:Shirt,       label:'Outfits'     },
   { to:'/gifts',       icon:Gift,        label:'Gifts'       },
   { to:'/family',      icon:UsersRound,  label:'Family'      },
+  { to:'/travel',      icon:Plane,       label:'Travel Plans'},
+  { to:'/updates',     icon:Activity,    label:'Updates'     },
   { to:'/settings',    icon:Settings,    label:'Settings'    },
 ]
 
 export default function Sidebar({ open, onClose }) {
-  const { weddingTitle, events } = useApp()
+  const { weddingTitle, events, userRole } = useApp()
   const location = useLocation()
   const [eventsOpen, setEventsOpen] = useState(true)
+
+  const allowedNav = NAV_BY_ROLE[userRole] || NAV_BY_ROLE.admin
+  const visibleNav = ALL_NAV.filter(n => allowedNav.includes(n.to.replace('/','')))
 
   return (
     <>
@@ -46,7 +61,7 @@ export default function Sidebar({ open, onClose }) {
           <button onClick={onClose} className="lg:hidden btn-ghost p-1.5"><X size={16}/></button>
         </div>
 
-        {/* Wedding name — now links to settings */}
+        {/* Wedding name */}
         <NavLink to="/settings" onClick={onClose} className="mx-3 my-2.5 px-3 py-2 rounded-xl block"
           style={{background:'var(--champagne)', border:'1px solid var(--champagne-border)'}}>
           <p className="text-xs font-medium uppercase tracking-wide" style={{color:'var(--gold)'}}>Planning for</p>
@@ -56,36 +71,50 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+          {/* Dashboard — always visible */}
           <NavLink to="/" onClick={onClose}
             className={location.pathname==='/' ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
             <LayoutDashboard size={17}/><span>Dashboard</span>
           </NavLink>
 
-          {/* Events */}
-          <div>
-            <button onClick={()=>setEventsOpen(o=>!o)}
-              className="nav-item nav-item-inactive w-full justify-between text-left">
-              <span className="flex items-center gap-3"><CalendarDays size={17}/>Events</span>
-              {eventsOpen ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
-            </button>
-            {eventsOpen && (
-              <div className="ml-3 mt-0.5 space-y-0.5 pl-2 border-l" style={{borderColor:'var(--champagne-border)'}}>
-                <NavLink to="/events" end onClick={onClose}
-                  className={location.pathname==='/events' ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
-                  <span className="text-base">⚙️</span><span>Manage Events</span>
-                </NavLink>
-                {events.map(evt => (
-                  <NavLink key={evt.id} to={`/events/${evt.id}`} onClick={onClose}
-                    className={location.pathname===`/events/${evt.id}` ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
-                    <span>{EVENT_EMOJIS[evt.name]||'💍'}</span>
-                    <span className="truncate">{evt.name}</span>
-                  </NavLink>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Events — visible to admin, bride, groom */}
+          {['admin','bride_family','groom_family'].includes(userRole) && (
+            <div>
+              <button onClick={()=>setEventsOpen(o=>!o)}
+                className="nav-item nav-item-inactive w-full justify-between text-left">
+                <span className="flex items-center gap-3"><CalendarDays size={17}/>Events</span>
+                {eventsOpen ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
+              </button>
+              {eventsOpen && (
+                <div className="ml-3 mt-0.5 space-y-0.5 pl-2 border-l" style={{borderColor:'var(--champagne-border)'}}>
+                  {userRole === 'admin' && (
+                    <NavLink to="/events" end onClick={onClose}
+                      className={location.pathname==='/events' ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
+                      <span className="text-base">⚙️</span><span>Manage Events</span>
+                    </NavLink>
+                  )}
+                  {events.map(evt => (
+                    <NavLink key={evt.id} to={`/events/${evt.id}`} onClick={onClose}
+                      className={location.pathname===`/events/${evt.id}` ? 'nav-item text-xs py-1.5 nav-item-active' : 'nav-item text-xs py-1.5 nav-item-inactive'}>
+                      <span>{EVENT_EMOJIS[evt.name]||'💍'}</span>
+                      <span className="truncate">{evt.name}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          {NAV_MAIN.map(({ to, icon:Icon, label }) => (
+          {/* Overseas: show schedule link */}
+          {userRole === 'overseas_family' && (
+            <NavLink to="/updates" onClick={onClose}
+              className={location.pathname==='/updates' ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
+              <CalendarDays size={17}/><span>Wedding Schedule</span>
+            </NavLink>
+          )}
+
+          {/* Role-filtered nav */}
+          {visibleNav.map(({ to, icon:Icon, label }) => (
             <NavLink key={to} to={to} onClick={onClose}
               className={location.pathname.startsWith(to) ? 'nav-item nav-item-active' : 'nav-item nav-item-inactive'}>
               <Icon size={17}/><span>{label}</span>

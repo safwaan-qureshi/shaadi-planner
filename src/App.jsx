@@ -14,16 +14,15 @@ import Gifts        from './pages/Gifts'
 import Invitations  from './pages/Invitations'
 import Invitation   from './pages/Invitation'
 import Settings     from './pages/Settings'
+import Travel       from './pages/Travel'
+import Updates      from './pages/Updates'
 
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public invitation page — no sidebar */}
           <Route path="/invite/:token" element={<Invitation />} />
-
-          {/* Main app */}
           <Route path="/" element={<Layout />}>
             <Route index              element={<Dashboard />}   />
             <Route path="events"      element={<Events />}      />
@@ -37,6 +36,8 @@ export default function App() {
             <Route path="outfits"     element={<Outfits />}     />
             <Route path="gifts"       element={<Gifts />}       />
             <Route path="settings"    element={<Settings />}    />
+            <Route path="travel"      element={<Travel />}      />
+            <Route path="updates"     element={<Updates />}     />
           </Route>
         </Routes>
       </BrowserRouter>
