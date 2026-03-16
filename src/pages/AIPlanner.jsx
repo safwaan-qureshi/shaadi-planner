@@ -79,7 +79,7 @@ function generateSuggestion({ eventName, guestCount, budgetPKR, side }) {
     },
     'Walima': {
       overview: `Walima reception for ${guests} guests, hosted by groom's family. Budget: ${fmt(budget)}.`,
-      tasks: ['Book venue (can be same as Barat or different)','Plan walima menu','Arrange simpler decor (bride/groom may reuse some)','Send walima invitations','Arrange photography','Plan bride's walima outfit','Coordinate seating for elders'],
+      tasks: ['Book venue (can be same as Barat or different)','Plan walima menu','Arrange simpler decor (bride/groom may reuse some)','Send walima invitations','Arrange photography','Plan bridal walima outfit','Coordinate seating for elders'],
       vendors: [
         { category:'Venue',       budget:fmt(venueRange),    notes:'Reception hall or hotel' },
         { category:'Catering',    budget:fmt(cateringRange), notes:'Walima lunch or dinner buffet' },
